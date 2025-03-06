@@ -6,6 +6,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { WalletModule } from './wallet/wallet.module';
 import { PaymentModule } from './konnect/payment/payment.module';
 import { WebhookModule } from './konnect/webhook/webhook.module';
+import { NotificationModule } from './notification/notification.module';
+import { TwilioModule } from './twilio/twilio.module';
+import { ChatModule } from './chat/chat.module';
 
 
 @Module({
@@ -30,6 +33,9 @@ import { WebhookModule } from './konnect/webhook/webhook.module';
     PaymentModule,
     WebhookModule,
     WalletModule,
+    NotificationModule,
+    TwilioModule,
+    ChatModule,
 
   ],
 

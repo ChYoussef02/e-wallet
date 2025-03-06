@@ -6,15 +6,15 @@ import {
   PaymentResponseDto,
 } from './dto/payment.dto';
 import { ConfigService } from '@nestjs/config';
+import { WalletService } from 'src/wallet/wallet.service';
 
 dotenv.config();
 
 @Injectable()
 export class PaymentService {
-  private readonly konnectBaseUrl =
-    'https://api.sandbox.konnect.network/api/v2/payments';
+  private readonly konnectBaseUrl ='https://api.sandbox.konnect.network/api/v2/payments';
   private readonly apiKey = process.env.KONNECT_API_KEY;
-  constructor(private readonly config:ConfigService){}
+  constructor(private readonly config:ConfigService , private readonly walletService : WalletService,){}
   async initiatePayment(paymentDto: PaymentDto): Promise<PaymentResponseDto> {
     try {
       console.log('Sending paymentDto:', JSON.stringify(paymentDto, null, 2));
@@ -23,6 +23,15 @@ export class PaymentService {
         paymentDto,
         { headers: { 'x-api-key': this.apiKey } },
       );
+      const { orderId, amount, email } = paymentDto;
+
+      // 3️⃣ Update User Wallet Balance in Your Database
+      const parsedOrderId = parseInt(orderId, 10);
+      console.log("start updating wallet ... ");
+
+      await this.walletService.updateBalance(parsedOrderId, amount);
+
+      console.log(`✅ Wallet updated for user ${email} with amount ${amount}`);
       console.log('Response data:', response.data);
       return response.data as PaymentResponseDto;
     } catch (error) {

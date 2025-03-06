@@ -31,12 +31,7 @@ export class WebhookController {
       }
 
       // 2️⃣ Extract User Info from Payment Response
-      const { orderId, amount, email } = paymentDetails; console.log(paymentDetails)
 
-      // 3️⃣ Update User Wallet Balance in Your Database
-      await this.walletService.updateBalance(orderId, amount);
-
-      console.log(`✅ Wallet updated for user ${email} with amount ${amount}`);
 
       // Respond to Konnect that webhook was received successfully
       res.status(200).send('Webhook processed');

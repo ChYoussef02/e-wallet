@@ -5,12 +5,17 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../user/entities/user.entities'; // Import User entity
+import { WalletModule } from 'src/wallet/wallet.module';
+import { TwilioModule } from 'src/twilio/twilio.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]), // Register User entity for TypeORM
+    TypeOrmModule.forFeature([User]),
     JwtModule.register({}),
     ConfigModule,
+    WalletModule,
+    TwilioModule,
+
   ],
   providers: [AuthService],
   controllers: [AuthController],

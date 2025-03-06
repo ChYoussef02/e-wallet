@@ -1,11 +1,4 @@
-import {
-  Body,
-  Controller,
-  HttpCode,
-  HttpStatus,
-  Post,
-  Req,
-} from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthDto } from './dto';
 
@@ -22,5 +15,11 @@ export class AuthController {
   @Post('signin')
   signin(@Body() dto: AuthDto) {
     return this.authService.signin(dto);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('verify-sms')
+  verifySms(@Body() body: { phoneNumber: string; code: string }) {
+    return this.authService.verifySms(body.phoneNumber, body.code);
   }
 }

@@ -1,5 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
-import { Wallet } from '../../wallet/entity/wallet.entity';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, JoinColumn } from 'typeorm';
+import { Wallet } from '../entity/wallet.entity';
 
 @Entity("transaction")
 export class Transaction {
@@ -24,10 +24,17 @@ export class Transaction {
     @Column()
     category: string; // 'deposit', 'transfer', etc.
 
+    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    date: Date;
 
-    @Column()
-    date : Date
+    @Column({ nullable: true })
+    owner: number;
+
+    @Column({ nullable: true })
+    note?: string;
+
 
   @ManyToOne(() => Wallet, (wallet) => wallet.transactions, { onDelete: 'CASCADE' })
   wallet: Wallet;
+
 }

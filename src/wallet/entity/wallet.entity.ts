@@ -1,24 +1,25 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, OneToOne, JoinColumn } from 'typeorm';
-import { Transaction } from '../../transactions/entities/transaction.entities';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, OneToOne, JoinColumn, ManyToOne } from 'typeorm';
+import { Transaction } from "../dto/transaction.entities";
 import { User } from 'src/user/entities/user.entities';
 
-@Entity()
+@Entity("wallet")
 export class Wallet {
   @PrimaryGeneratedColumn()
-  id: number;
+  walletId: number;
 
-  @Column({ unique: true })
-  walletId: string;
-
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({ type: 'decimal', default: 0 ,transformer: {
+    to: (value: number) => value.toString(),
+    from: (value: string) => Number(value)  }})
   balance: number;
 
-  @Column({ nullable: false })  // Explicitly store userId
+  @Column({ nullable: false })
   userId: number;
 
-  @OneToOne(() => User, (user) => user.wallet, { cascade: true })
+  @OneToOne(() => User, (user) => user.wallet)
   @JoinColumn({ name: 'userId' })
   user: User;
+
+
 
   @OneToMany(() => Transaction, (transaction) => transaction.wallet)
   transactions: Transaction[];

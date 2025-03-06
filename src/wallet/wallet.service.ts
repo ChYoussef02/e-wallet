@@ -2,17 +2,30 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Wallet } from './entity/wallet.entity';
-import { TransactionDto } from './dto/transaction.dto';
+import { User } from 'src/user/entities/user.entities';
+import { Transaction } from './dto/transaction.entities';
+import { NotificationGateway } from '../notification/notificationGateway';
+import { Notification } from '../notification/entity/notification.entity';
+import { CreateWalletDto } from './dto/create-wallet.dto';
+import { UpdateBalanceDto } from './dto/update-balance.dto';
+import { SendMoneyDto } from './dto/send-money.dto';
+import { TransactionResponseDto } from './dto/transaction-response.dto';
 
 @Injectable()
 export class WalletService {
   constructor(
     @InjectRepository(Wallet)
     private readonly walletRepository: Repository<Wallet>,
+    @InjectRepository(Transaction)
+    private readonly transactionRepository: Repository<Transaction>,
+    @InjectRepository(Notification)
+    private readonly notificationRepository: Repository<Notification>,
+    private readonly notificationGateway: NotificationGateway,
   ) {}
 
-  async createWallet(userId: number): Promise<Wallet> {
-    const wallet = this.walletRepository.create({ userId, balance: 0 });
+  async createWallet(createWalletDto: CreateWalletDto)  : Promise<Wallet> {
+    const { user, balance } = createWalletDto;
+    const wallet = this.walletRepository.create({ user, balance });
     return this.walletRepository.save(wallet);
   }
 
@@ -28,7 +41,10 @@ export class WalletService {
     return wallet.balance;
   }
 
-  async updateBalance(userId: number, amount: number): Promise<Wallet> {
+  async updateBalance(
+    userId: number,
+    amount:number,
+  ): Promise<Wallet> {
     const wallet = await this.walletRepository.findOne({
       where: { user: { id: userId } },
       relations: ['user'],
@@ -42,25 +58,50 @@ export class WalletService {
     return this.walletRepository.save(wallet);
   }
 
-  async sendMoney(transactionDto: TransactionDto): Promise<string> {
-    const { senderId, receiverId, amount } = transactionDto;
+  async sendMoney(userId: number,sendMoneyDto: SendMoneyDto): Promise<Boolean> {
+    const { amount, category, note, recipientIdentifier } = sendMoneyDto;
 
-    if (senderId === receiverId) {
+    if (!recipientIdentifier || !amount || !category) {
+      throw new BadRequestException('Recipient identifier, amount, and category are required');
+    }
+
+    const senderWallet = await this.walletRepository.findOne({
+      where: { user: { id: userId } },
+      relations: ['user'],
+    });
+
+    if (!senderWallet) {
+      throw new NotFoundException('Sender wallet not found');
+    }
+
+    // Prevent self-transfers
+    if (
+      (recipientIdentifier.includes('@') && senderWallet.user.email === recipientIdentifier) ||
+      (!recipientIdentifier.includes('@') && senderWallet.user.phoneNumber === recipientIdentifier)
+    ) {
       throw new BadRequestException('You cannot send money to yourself');
     }
 
-   /* const senderWallet = await this.walletRepository.findOne({
-      where: { user: { id: senderId } },
-      relations: ['user'],
-    });
+    let receiverWallet: Wallet;
+    const isEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(
+      recipientIdentifier,
+    );
+    const isPhoneNumber = /^[0-9\+\-\(\)\s]*$/.test(recipientIdentifier);
 
-    const receiverWallet = await this.walletRepository.findOne({
-      where: { user: { id: receiverId } },
-      relations: ['user'],
-    });
+    if (isEmail) {
+      receiverWallet = await this.walletRepository.findOne({
+        where: { user: { email: recipientIdentifier } },
+        relations: ['user'],
+      });
+    } else if (isPhoneNumber) {
+      receiverWallet = await this.walletRepository.findOne({
+        where: { user: { phoneNumber: recipientIdentifier } },
+        relations: ['user'],
+      });
+    }
 
-    if (!senderWallet || !receiverWallet) {
-      throw new NotFoundException('Sender or receiver wallet not found');
+    if (!receiverWallet) {
+      throw new NotFoundException('Receiver wallet not found');
     }
 
     if (senderWallet.balance < amount) {
@@ -70,9 +111,64 @@ export class WalletService {
     senderWallet.balance -= amount;
     receiverWallet.balance += amount;
 
-    await this.walletRepository.save(senderWallet);
-    await this.walletRepository.save(receiverWallet);
-    */
-    return 'Transaction successful';
+    await this.walletRepository.save([senderWallet, receiverWallet]);
+
+    const senderTransaction = this.transactionRepository.create({
+      owner: senderWallet.user.id,
+      senderWalletId: senderWallet.walletId,
+      receiverWalletId: receiverWallet.walletId,
+      receiverEmail: receiverWallet.user.email,
+      amount,
+      status: 'SUCCESS',
+      category: 'Transfer',
+      date: new Date(),
+    });
+
+    const receiverTransaction = this.transactionRepository.create({
+      senderWalletId: senderWallet.walletId,
+      receiverWalletId: receiverWallet.walletId,
+      receiverEmail: receiverWallet.user.email,
+      amount,
+      status: 'SUCCESS',
+      category: 'Deposit',
+      date: new Date(),
+      owner: receiverWallet.user.id,
+    });
+
+    await this.transactionRepository.save([senderTransaction, receiverTransaction]);
+
+    await this.notificationRepository.save({
+      receiver: receiverWallet.user,
+      message: `You received $${amount} from ${senderWallet.user.email || senderWallet.user.phoneNumber}`,
+      isRead: false,
+      createdAt: new Date(),
+    });
+
+    this.notificationGateway.notifyUser(
+      receiverWallet.user.id,
+      `You received $${amount} from ${senderWallet.user.email || senderWallet.user.phoneNumber}`,
+    );
+
+    return true;
+  }
+
+  async getTransactionsByUser(
+    userId: number,
+    skip: number,
+    limit: number,
+  ): Promise<TransactionResponseDto> {
+    const [transactions, totalTransactions] = await this.transactionRepository.findAndCount({
+      where: { owner: userId },
+      skip,
+      take: limit,
+    });
+
+    const totalPages = Math.ceil(totalTransactions / limit);
+
+    return {
+      transactions,
+      totalPages,
+      currentPage: Math.ceil(skip / limit) + 1,
+    };
   }
 }
