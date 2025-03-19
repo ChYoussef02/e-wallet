@@ -29,7 +29,7 @@ export class PaymentService {
       const parsedOrderId = parseInt(orderId, 10);
       console.log("start updating wallet ... ");
 
-      await this.walletService.updateBalance(parsedOrderId, amount);
+     // await this.walletService.updateBalance(parsedOrderId, amount);
 
       console.log(`✅ Wallet updated for user ${email} with amount ${amount}`);
       console.log('Response data:', response.data);

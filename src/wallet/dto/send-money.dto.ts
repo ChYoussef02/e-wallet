@@ -1,24 +1,24 @@
-// send-money.dto.ts
-import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsPositive, IsString, Matches } from 'class-validator';
 
 export class SendMoneyDto {
-  @IsNotEmpty()
   @IsNumber()
+  @IsPositive()
+  @IsNotEmpty()
+  userId: number;
+
+  @IsNumber()
+  @IsPositive()
+  @IsNotEmpty()
   amount: number;
 
-  @IsNotEmpty()
-  @IsString()
-  category: string;
-
-  @IsOptional()
   @IsString()
   note: string;
 
-  @IsNotEmpty()
   @IsString()
-  recipientIdentifier: string;
-
   @IsNotEmpty()
-  @IsNumber()
-  userId: number;
+  @Matches(
+    /^([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|[0-9\+\-\(\)\s]*)$/,
+    { message: 'Recipient identifier must be a valid email or phone number' }
+  )
+  recipientIdentifier: string;
 }

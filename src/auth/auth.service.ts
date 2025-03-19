@@ -30,10 +30,23 @@ export class AuthService {
   }
 
   async signup(dto: AuthDto) {
-    const hash = await argon.hash(dto.password);
 
+    console.log('Checking for existing user:', dto.email, dto.phoneNumber);
+
+    const existingUser = await this.userRepository.findOne({
+      where: [{ email: dto.email }, { phoneNumber: dto.phoneNumber }],
+    });
+
+    if (existingUser) {
+      console.log('User already exists:', existingUser); // Log the existing user for debug purposes
+      throw new ForbiddenException('Credentials taken');
+    }
+
+    const hash = await argon.hash(dto.password);
+    console.log(dto.fullName)
     try {
       const user = this.userRepository.create({
+        fullName: dto.fullName,
         email: dto.email,
         hash: hash,
         phoneNumber: dto.phoneNumber,
@@ -42,11 +55,13 @@ export class AuthService {
       await this.userRepository.save(user);
       await this.walletService.createWallet(user);
 
-      return this.signToken(user.id, user.email, user.phoneNumber);
+      return this.signToken(user.id, user.fullName, user.email, user.phoneNumber);
     } catch (error) {
+      console.error(error);
       throw new ForbiddenException('Credentials taken');
     }
   }
+
 
   async signin(dto: AuthDto) {
     const user = await this.userRepository.findOne({
@@ -59,7 +74,8 @@ export class AuthService {
     const pwMatches = await argon.verify(user.hash, dto.password);
     if (!pwMatches) throw new ForbiddenException('Invalid credentials');
 
-    // const { verificationId } = await this.sendVerificationCode(user);
+   // const { verificationId } = await this.sendVerificationCode(user);
+     // console.log(verificationId)
 
 
 
@@ -67,22 +83,17 @@ export class AuthService {
 
 
 
-    const token = await this.signToken(user.id, user.email, user.phoneNumber);
+    const token = await this.signToken(user.id,user.fullName, user.email, user.phoneNumber);
 
    return {
       access_token: token.access_token,
-      user: {
-        id: user.id,
-        email: user.email,
-        phoneNumber: user.phoneNumber,
-        balance: user.wallet ? user.wallet.balance : 0,
-      },
-     // verificationId
+      // verificationId
     };
+
   }
 
-  async signToken(userId: number, email: string, phoneNumber: string): Promise<{ access_token: string }> {
-    const payload = { sub: userId, email, phoneNumber };
+  async signToken(userId: number,fullName:string, email: string, phoneNumber: string): Promise<{ access_token: string }> {
+    const payload = { id: userId,fullName, email, phoneNumber };
     const secret = this.config.get<string>('JWT_SECRET');
 
     const token = await this.jwt.signAsync(payload, {
@@ -96,8 +107,9 @@ export class AuthService {
 
   async verifySms(phoneNumber: string, code: string) {
     const user = await this.userRepository.findOne({ where: { phoneNumber } });
-    console.log(phoneNumber , code )
+    console.log(user , code )
     if (!user || user.smsCode !== code || new Date() > user.smsCodeExpires) {
+      console.log("sms code stored in db ..",user.smsCode)
       throw new ForbiddenException('Invalid or expired verification code');
     }
 
@@ -105,7 +117,7 @@ export class AuthService {
     user.smsCodeExpires = null;
     await this.userRepository.save(user);
 
-    return this.signToken(user.id, user.email, user.phoneNumber);
+    return this.signToken(user.id,user.fullName, user.email, user.phoneNumber);
   }
 
   async sendVerificationCode(user: User) {

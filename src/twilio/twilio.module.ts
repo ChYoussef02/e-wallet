@@ -3,6 +3,6 @@ import { TwilioService } from "./twilio.service";
 
 @Module({
   providers: [TwilioService],
-  exports: [TwilioService], // Export it for use in other modules
+  exports: [TwilioService],
 })
 export class TwilioModule {}

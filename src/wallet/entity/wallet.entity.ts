@@ -6,10 +6,10 @@ import { User } from 'src/user/entities/user.entities';
 export class Wallet {
   @PrimaryGeneratedColumn()
   walletId: number;
-
-  @Column({ type: 'decimal', default: 0 ,transformer: {
-    to: (value: number) => value.toString(),
-    from: (value: string) => Number(value)  }})
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0, transformer: {
+    to: (value: number) => value,  // Stores as is
+    from: (value: string) => parseFloat(value)  // Converts from string to number
+}})
   balance: number;
 
   @Column({ nullable: false })

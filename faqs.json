@@ -1,0 +1,20 @@
+[{
+    "question": "What is E-wallet ?",
+    "answer":
+      "E-walllet is an  app that allows you to store money, make payments, and perform other financial transactions electronically through your mobile device."
+  },
+  { "question": "How to Download the E-Wallet App ?",
+   "answer": "You can download the CashEase E-wallet app from the Google Play Store for Android devices and the Apple App Store for iOS devices. Simply search for E-wallet, install the app, and follow the setup instructions to create your account." },
+  { "question": "Can I Transfer Money From E-Wallet To My Bank Account ?",
+  "answer": "Yes, you can transfer money from your  E-wallet to your linked bank account. Go to the Transfer section in the app, select Withdraw to Bank, enter your bank details and the amount, and confirm the transaction. Processing times may vary depending on your bank." },
+  { "question": "Is E-wallet compatible with all types of Devices ?",
+   "answer": "E-wallet is compatible with most Android and iOS devices. To ensure a smooth experience, make sure your device meets the minimum system requirements and has an active internet connection." },
+  { "question": "How Can I Contact E-wallet If I had a Problem ?",
+   "answer": "If you encounter any issues, you can reach out to our customer support team through:   📧 Email: support@E-wallet.com 📞 Phone: +21650456573   wallet, click on 'Recharge', select 'Konnect', and follow the instructions."
+  },
+  {
+    "question": "How do I check my transaction history?",
+    "answer": "Go to the 'Transactions' section in the app to view all your past transactions."
+  }
+
+]

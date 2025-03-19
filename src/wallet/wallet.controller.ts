@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param, ParseIntPipe, UseGuards, Req, Query } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, ParseIntPipe, UseGuards, Req, Query, ValidationPipe, UsePipes } from '@nestjs/common';
 import { WalletService } from './wallet.service';
 import { AuthGuard } from '@nestjs/passport';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -20,9 +20,12 @@ export class WalletController {
     return this.walletService.getBalance(userId);
   }
 
-  @Post('send')   //wallet/send
-  async sendMoney(@Body() userId:number, sendMoneyDto: SendMoneyDto) {
-    return this.walletService.sendMoney(userId,sendMoneyDto);
+  @Post('send')
+  @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
+  async sendMoney(@Body() sendMoneyDto: SendMoneyDto) {
+    return this.walletService.sendMoney(
+     sendMoneyDto
+    );
   }
 
 
@@ -31,10 +34,17 @@ export class WalletController {
     @Query('userId') userId: number,
     @Query('page') page: number = 1,
     @Query('pageSize') pageSize: number = 5,
+
   ) {
     const skip = (page - 1) * pageSize;
     const limit = pageSize;
     return this.walletService.getTransactionsByUser(userId, skip, limit);
   }
+
+
+  @Get('transactions/home')
+async getRecentTransactions(@Query('userId') userId: number) {
+  return this.walletService.getRecentTransactions(userId);
+}
 
 }
